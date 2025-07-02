@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase | Modern E-Commerce UI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .product-card {
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .cart-badge {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.2);
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-white text-gray-800">
+  <!-- Header -->
+  <header class="flex justify-between items-center p-4 shadow-md">
+    <div class="text-2xl font-bold">ShopEase</div>
+    <div class="flex gap-4 items-center">
+      <input id="searchInput" type="text" placeholder="Search products..." class="border px-2 py-1 rounded" />
+      <button class="relative" aria-label="Shopping Cart">
+        🛒
+        <span id="cartCount" class="absolute top-0 right-0 text-xs bg-red-600 text-white rounded-full px-1 cart-badge">0</span>
+      </button>
+      <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition">Login</button>
+    </div>
+  </header>
+
+  <!-- Filters and Products -->
+  <section class="p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+    <!-- Sidebar Filters -->
+    <aside class="hidden md:block border p-4 rounded">
+      <h2 class="font-bold mb-2">Filters</h2>
+      <div>
+        <label class="block mb-1">Category</label>
+        <select id="categoryFilter" class="w-full border p-1 rounded">
+          <option value="All">All</option>
+          <option value="Clothing">Clothing</option>
+          <option value="Electronics">Electronics</option>
+        </select>
+      </div>
+      <div class="mt-4">
+        <label class="block mb-1">Price Range (₹300 - ₹4500)</label>
+        <input id="priceRange" type="range" min="300" max="4500" value="4500" class="w-full" />
+        <div class="flex justify-between text-sm text-gray-600 mt-1">
+          <span>₹300</span>
+          <span>₹4500</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="col-span-3">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Popular Products</h2>
+        <select id="sortSelect" class="border px-2 py-1 rounded">
+          <option value="newest">Newest</option>
+          <option value="low-high">Price: Low to High</option>
+          <option value="high-low">Price: High to Low</option>
+        </select>
+      </div>
+
+      <!-- Product Grid -->
+      <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+
+      <!-- Pagination -->
+      <div id="pagination" class="mt-6 flex justify-center gap-2"></div>
+    </main>
+  </section>
+
+  <!-- Footer -->
+  <footer class="p-4 mt-10 bg-gray-100 text-center text-sm">
+    © 2025 ShopEase. All rights reserved.
+  </footer>
+
+  <script>
+    const products = [
+      { id: 1, name: "Wireless Headphones", category: "Electronics", price: 1999, image: "https://tinyurl.com/yv5j5vzx" },
+      { id: 2, name: "Casual T-Shirt", category: "Clothing", price: 499, image: "https://tinyurl.com/ycx2ewet" },
+      { id: 3, name: "Smart Watch", category: "Electronics", price: 4499, image: "https://tinyurl.com/4n6v96x9" },
+      { id: 4, name: "Bluetooth Speaker", category: "Electronics", price: 1499, image: "https://tinyurl.com/yc33btb8" },
+      { id: 5, name: "Fitness Tracker Band", category: "Electronics", price: 899, image: "https://tinyurl.com/5b9r434f" },
+      { id: 6, name: "Formal Shirt", category: "Clothing", price: 799, image: "https://tinyurl.com/mk49m5ta" },
+      { id: 7, name: "LED Table Lamp", category: "Electronics", price: 650, image: "https://tinyurl.com/37vdaxvu" },
+      { id: 8, name: "USB Charging Hub", category: "Electronics", price: 349, image: "https://tinyurl.com/yc86uz5y" },
+      { id: 9, name: "Laptop Stand", category: "Electronics", price: 1099, image: "https://tinyurl.com/3pp94d43" },
+      { id: 10, name: "Gaming Mouse", category: "Electronics", price: 1299, image: "https://tinyurl.com/3vv5t7f7" }
+    ];
+
+    let currentPage = 1;
+    const productsPerPage = 6;
+    let cartCount = 0;
+
+    const productGrid = document.getElementById('productGrid');
+    const pagination = document.getElementById('pagination');
+    const cartCountElement = document.getElementById('cartCount');
+
+    const categoryFilter = document.getElementById('categoryFilter');
+    const priceRange = document.getElementById('priceRange');
+    const searchInput = document.getElementById('searchInput');
+    const sortSelect = document.getElementById('sortSelect');
+
+    function displayProducts() {
+      let filteredProducts = [...products];
+
+      // Filter by category
+      if (categoryFilter.value !== "All") {
+        filteredProducts = filteredProducts.filter(p => p.category === categoryFilter.value);
+      }
+
+      // Filter by price
+      filteredProducts = filteredProducts.filter(p => p.price <= priceRange.value);
+
+      // Filter by search
+      const searchQuery = searchInput.value.toLowerCase();
+      filteredProducts = filteredProducts.filter(p => p.name.toLowerCase().includes(searchQuery));
+
+      // Sort products
+      if (sortSelect.value === 'low-high') {
+        filteredProducts.sort((a, b) => a.price - b.price);
+      } else if (sortSelect.value === 'high-low') {
+        filteredProducts.sort((a, b) => b.price - a.price);
+      }
+
+      // Pagination
+      const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+      const startIndex = (currentPage - 1) * productsPerPage;
+      const paginatedProducts = filteredProducts.slice(startIndex, startIndex + productsPerPage);
+
+      // Display products
+      productGrid.innerHTML = paginatedProducts.map(product => `
+        <div class="border p-2 rounded product-card">
+          <img src="${product.image}" alt="${product.name}" class="w-full h-40 object-cover rounded" />
+          <h3 class="mt-2 font-bold">${product.name}</h3>
+          <p class="text-sm text-gray-600">${product.category}</p>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-green-600 font-bold">₹${product.price}</span>
+            <button onclick="addToCart()" class="text-sm bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition">Add to Cart</button>
+          </div>
+        </div>
+      `).join('');
+
+      // Display pagination
+      pagination.innerHTML = '';
+      for (let i = 1; i <= totalPages; i++) {
+        pagination.innerHTML += `
+          <button class="px-3 py-1 border rounded ${i === currentPage ? 'bg-gray-200' : 'hover:bg-gray-200'} transition" onclick="goToPage(${i})">${i}</button>
+        `;
+      }
+    }
+
+    function addToCart() {
+      cartCount++;
+      cartCountElement.textContent = cartCount;
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      displayProducts();
+    }
+
+    // Event Listeners
+    categoryFilter.addEventListener('change', () => { currentPage = 1; displayProducts(); });
+    priceRange.addEventListener('input', () => { currentPage = 1; displayProducts(); });
+    searchInput.addEventListener('input', () => { currentPage = 1; displayProducts(); });
+    sortSelect.addEventListener('change', () => { currentPage = 1; displayProducts(); });
+
+    // Initial display
+    displayProducts();
+  </script>
+</body>
+
+</html>
